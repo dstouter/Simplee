@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SwipeMail - Tinder for your inbox. Swipe left to trash, right to keep. Manage emails with style.">
+    <title>SwipeMail - Tinder for Your Inbox</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #0f0f12;
+            --background-secondary: #18181c;
+            --foreground: #fafafa;
+            --muted: #71717a;
+            --border: rgba(255, 255, 255, 0.08);
+            --card: rgba(24, 24, 28, 0.9);
+            --gradient-keep: linear-gradient(135deg, #22c55e, #16a34a);
+            --gradient-trash: linear-gradient(135deg, #ef4444, #dc2626);
+            --gradient-reply: linear-gradient(135deg, #3b82f6, #2563eb);
+            --gradient-accent: linear-gradient(135deg, #8b5cf6, #6366f1);
+            --shadow-glow-green: 0 0 40px rgba(34, 197, 94, 0.3);
+            --shadow-glow-red: 0 0 40px rgba(239, 68, 68, 0.3);
+            --shadow-glow-blue: 0 0 40px rgba(59, 130, 246, 0.3);
+            --font-display: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--background);
+            color: var(--foreground);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Background decoration */
+        .bg-decoration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .bg-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.15;
+        }
+
+        .bg-blob-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--gradient-accent);
+            top: -100px;
+            right: -100px;
+        }
+
+        .bg-blob-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--gradient-reply);
+            bottom: 10%;
+            left: -100px;
+        }
+
+        /* Header */
+        header {
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--gradient-reply);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-icon svg {
+            width: 20px;
+            height: 20px;
+            color: white;
+        }
+
+        .logo-text h1 {
+            font-family: var(--font-display);
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .ai-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            color: #a78bfa;
+        }
+
+        .ai-badge svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            position: relative;
+            z-index: 10;
+            animation: fadeIn 0.6s ease-out 0.1s both;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .stat-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+
+        .stat-remaining .stat-icon {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+        }
+
+        .stat-trashed .stat-icon {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .stat-kept .stat-icon {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .stat-value {
+            font-weight: 600;
+        }
+
+        .stat-label {
+            color: var(--muted);
+        }
+
+        /* Main Content */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Card Stack */
+        .card-stack {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 420px;
+            perspective: 1000px;
+        }
+
+        .email-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            cursor: grab;
+            user-select: none;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .email-card:active {
+            cursor: grabbing;
+        }
+
+        .email-card.dragging {
+            transition: none;
+        }
+
+        .email-card.swiping-left {
+            box-shadow: var(--shadow-glow-red);
+        }
+
+        .email-card.swiping-right {
+            box-shadow: var(--shadow-glow-green);
+        }
+
+        .email-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.125rem;
+            flex-shrink: 0;
+        }
+
+        .email-meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .email-sender {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .priority-badge {
+            font-size: 0.625rem;
+            padding: 0.125rem 0.5rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .priority-high {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .priority-medium {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+        }
+
+        .priority-low {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .email-address {
+            font-size: 0.75rem;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .email-time {
+            font-size: 0.75rem;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .email-subject {
+            font-family: var(--font-display);
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            line-height: 1.3;
+        }
+
+        .email-preview {
+            color: var(--muted);
+            font-size: 0.875rem;
+            line-height: 1.6;
+            flex: 1;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+        }
+
+        .email-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--muted);
+        }
+
+        .swipe-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.25rem;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+
+        .swipe-indicator.trash {
+            right: 1rem;
+            background: rgba(239, 68, 68, 0.9);
+            border: 2px solid #ef4444;
+        }
+
+        .swipe-indicator.keep {
+            left: 1rem;
+            background: rgba(34, 197, 94, 0.9);
+            border: 2px solid #22c55e;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            animation: slideUp 0.5s ease-out 0.2s both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .action-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .action-btn:hover::before {
+            opacity: 1;
+        }
+
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+
+        .action-btn svg {
+            width: 24px;
+            height: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-trash {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 2px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-trash:hover {
+            background: rgba(239, 68, 68, 0.2);
+            box-shadow: var(--shadow-glow-red);
+        }
+
+        .btn-reply {
+            width: 48px;
+            height: 48px;
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-reply:hover {
+            background: rgba(59, 130, 246, 0.2);
+            box-shadow: var(--shadow-glow-blue);
+        }
+
+        .btn-reply svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .btn-keep {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            border: 2px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-keep:hover {
+            background: rgba(34, 197, 94, 0.2);
+            box-shadow: var(--shadow-glow-green);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            background: var(--gradient-accent);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .empty-icon svg {
+            width: 40px;
+            height: 40px;
+            color: white;
+        }
+
+        .empty-state h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: var(--muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .empty-stat {
+            text-align: center;
+        }
+
+        .empty-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: var(--font-display);
+        }
+
+        .empty-stat-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .empty-stat.trashed .empty-stat-value {
+            color: #f87171;
+        }
+
+        .empty-stat.kept .empty-stat-value {
+            color: #4ade80;
+        }
+
+        /* Reply Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            background: var(--background-secondary);
+            border-radius: var(--radius) var(--radius) 0 0;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            font-family: var(--font-display);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-header h3 svg {
+            width: 18px;
+            height: 18px;
+            color: #60a5fa;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--foreground);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(90vh - 140px);
+        }
+
+        .reply-to {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .reply-to-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .reply-to-info {
+            flex: 1;
+        }
+
+        .reply-to-name {
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .reply-to-subject {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .quick-replies {
+            margin-bottom: 1rem;
+        }
+
+        .quick-replies-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quick-replies-label svg {
+            width: 14px;
+            height: 14px;
+            color: #a78bfa;
+        }
+
+        .quick-replies-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .quick-reply-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            color: var(--foreground);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .quick-reply-btn:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .reply-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--foreground);
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            resize: none;
+            margin-bottom: 1rem;
+            transition: var(--transition);
+        }
+
+        .reply-textarea:focus {
+            outline: none;
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .reply-textarea::placeholder {
+            color: var(--muted);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 0.875rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--foreground);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary {
+            flex: 2;
+            padding: 0.875rem;
+            background: var(--gradient-reply);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            box-shadow: var(--shadow-glow-blue);
+        }
+
+        .btn-primary svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .toast {
+            padding: 0.75rem 1.25rem;
+            background: var(--background-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            animation: toastIn 0.3s ease-out;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.trash {
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .toast.keep {
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .toast.reply {
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Responsive */
+        @media (min-width: 640px) {
+            .modal {
+                border-radius: var(--radius);
+                max-height: 80vh;
+                margin: auto;
+            }
+
+            .modal-overlay {
+                align-items: center;
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="bg-decoration">
+            <div class="bg-blob bg-blob-1"></div>
+            <div class="bg-blob bg-blob-2"></div>
+        </div>
+
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="20" height="16" x="2" y="4" rx="2"/>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>SwipeMail</h1>
+                    <p>Tinder for your inbox</p>
+                </div>
+            </div>
+            <div class="ai-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                    <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+                </svg>
+                AI-Powered
+            </div>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat stat-remaining">
+                <div class="stat-icon">📧</div>
+                <span class="stat-value" id="remaining-count">0</span>
+                <span class="stat-label">left</span>
+            </div>
+            <div class="stat stat-trashed">
+                <div class="stat-icon">🗑️</div>
+                <span class="stat-value" id="trashed-count">0</span>
+                <span class="stat-label">trashed</span>
+            </div>
+            <div class="stat stat-kept">
+                <div class="stat-icon">✓</div>
+                <span class="stat-value" id="kept-count">0</span>
+                <span class="stat-label">kept</span>
+            </div>
+        </div>
+
+        <main id="main-content">
+            <!-- Content will be injected by JS -->
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="reply-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                    </svg>
+                    AI Reply
+                </h3>
+                <button class="modal-close" onclick="closeReplyModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="reply-to" id="reply-to-info">
+                    <!-- Filled by JS -->
+                </div>
+                <div class="quick-replies">
+                    <div class="quick-replies-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                        </svg>
+                        AI Suggestions
+                    </div>
+                    <div class="quick-replies-options">
+                        <button class="quick-reply-btn" onclick="setQuickReply('Thanks! I\'ll get back to you soon.')">👍 Quick Thanks</button>
+                        <button class="quick-reply-btn" onclick="setQuickReply('Let me check and get back to you.')">🔍 Will Review</button>
+                        <button class="quick-reply-btn" onclick="setQuickReply('Sounds great! Let\'s schedule a call.')">📅 Schedule Call</button>
+                        <button class="quick-reply-btn" onclick="setQuickReply('I\'m not interested at this time.')">❌ Not Interested</button>
+                    </div>
+                </div>
+                <textarea class="reply-textarea" id="reply-text" placeholder="Type your reply or select a quick response..."></textarea>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeReplyModal()">Cancel</button>
+                    <button class="btn-primary" onclick="sendReply()">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/>
+                            <path d="m21.854 2.147-10.94 10.939"/>
+                        </svg>
+                        Send Reply
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // Mock email data
+        const mockEmails = [
+            {
+                id: 1,
+                sender: 'Sarah Chen',
+                email: 'sarah.chen@techcorp.com',
+                subject: 'Q4 Product Roadmap Review',
+                preview: 'Hi team, I wanted to share the updated product roadmap for Q4. We\'ve made some significant changes based on customer feedback and market analysis. Please review the attached document and let me know your thoughts by EOD Friday.',
+                time: '10:32 AM',
+                priority: 'high',
+                tags: ['Work', 'Urgent'],
+                color: '#ef4444'
+            },
+            {
+                id: 2,
+                sender: 'GitHub',
+                email: 'noreply@github.com',
+                subject: '[react-app] New pull request #234',
+                preview: 'dependabot opened a pull request to update lodash from 4.17.20 to 4.17.21. This update includes security fixes for prototype pollution vulnerability.',
+                time: '9:15 AM',
+                priority: 'medium',
+                tags: ['GitHub', 'Security'],
+                color: '#3b82f6'
+            },
+            {
+                id: 3,
+                sender: 'Michael Park',
+                email: 'michael.park@design.co',
+                subject: 'Design System Updates Ready for Review',
+                preview: 'Hey! The new component library is ready. I\'ve updated the color tokens, typography scale, and added new button variants. Check out the Figma file when you get a chance.',
+                time: 'Yesterday',
+                priority: 'low',
+                tags: ['Design', 'Review'],
+                color: '#22c55e'
+            },
+            {
+                id: 4,
+                sender: 'AWS Billing',
+                email: 'billing@aws.amazon.com',
+                subject: 'Your AWS Bill is Available',
+                preview: 'Your AWS bill for December 2024 is now available. Total charges: $147.32. View your detailed billing report in the AWS Management Console.',
+                time: 'Yesterday',
+                priority: 'medium',
+                tags: ['Billing', 'AWS'],
+                color: '#f59e0b'
+            },
+            {
+                id: 5,
+                sender: 'LinkedIn',
+                email: 'jobs@linkedin.com',
+                subject: '5 new jobs match your preferences',
+                preview: 'Based on your profile and job preferences, we found 5 new Senior Frontend Engineer positions that might interest you. Companies include Stripe, Vercel, and Netflix.',
+                time: '2 days ago',
+                priority: 'low',
+                tags: ['Jobs', 'Career'],
+                color: '#8b5cf6'
+            }
+        ];
+
+        let emails = [...mockEmails];
+        let trashedCount = 0;
+        let keptCount = 0;
+        let selectedEmail = null;
+
+        // Card dragging state
+        let isDragging = false;
+        let startX = 0;
+        let currentX = 0;
+        let currentCard = null;
+
+        function updateStats() {
+            document.getElementById('remaining-count').textContent = emails.length;
+            document.getElementById('trashed-count').textContent = trashedCount;
+            document.getElementById('kept-count').textContent = keptCount;
+        }
+
+        function showToast(message, type) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'toastOut 0.3s ease-out forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        function renderCards() {
+            const main = document.getElementById('main-content');
+            
+            if (emails.length === 0) {
+                main.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                            </svg>
+                        </div>
+                        <h2>Inbox Zero!</h2>
+                        <p>You've processed all your emails. Great job!</p>
+                        <div class="empty-stats">
+                            <div class="empty-stat trashed">
+                                <div class="empty-stat-value">${trashedCount}</div>
+                                <div class="empty-stat-label">Trashed</div>
+                            </div>
+                            <div class="empty-stat kept">
+                                <div class="empty-stat-value">${keptCount}</div>
+                                <div class="empty-stat-label">Kept</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const visibleEmails = emails.slice(0, 3);
+            
+            main.innerHTML = `
+                <div class="card-stack" id="card-stack">
+                    ${visibleEmails.map((email, index) => createCardHTML(email, index)).reverse().join('')}
+                </div>
+                <div class="action-buttons">
+                    <button class="action-btn btn-trash" onclick="handleSwipe('left')" ${emails.length === 0 ? 'disabled' : ''}>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                        </svg>
+                    </button>
+                    <button class="action-btn btn-reply" onclick="openReplyModal()" ${emails.length === 0 ? 'disabled' : ''}>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/>
+                        </svg>
+                    </button>
+                    <button class="action-btn btn-keep" onclick="handleSwipe('right')" ${emails.length === 0 ? 'disabled' : ''}>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 6 9 17l-5-5"/>
+                        </svg>
+                    </button>
+                </div>
+            `;
+
+            setupDragListeners();
+        }
+
+        function createCardHTML(email, index) {
+            const isTop = index === 0;
+            const offset = index * 8;
+            const scale = 1 - index * 0.05;
+            
+            return `
+                <div class="email-card" 
+                     data-id="${email.id}" 
+                     data-index="${index}"
+                     style="transform: translateY(${offset}px) scale(${scale}); z-index: ${10 - index}; ${!isTop ? 'pointer-events: none;' : ''}">
+                    <div class="swipe-indicator trash">TRASH</div>
+                    <div class="swipe-indicator keep">KEEP</div>
+                    <div class="email-header">
+                        <div class="avatar" style="background: ${email.color}20; color: ${email.color};">
+                            ${email.sender.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div class="email-meta">
+                            <div class="email-sender">
+                                ${email.sender}
+                                <span class="priority-badge priority-${email.priority}">${email.priority}</span>
+                            </div>
+                            <div class="email-address">${email.email}</div>
+                        </div>
+                        <div class="email-time">${email.time}</div>
+                    </div>
+                    <div class="email-subject">${email.subject}</div>
+                    <div class="email-preview">${email.preview}</div>
+                    <div class="email-tags">
+                        ${email.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function setupDragListeners() {
+            const topCard = document.querySelector('.email-card[data-index="0"]');
+            if (!topCard) return;
+
+            topCard.addEventListener('mousedown', startDrag);
+            topCard.addEventListener('touchstart', startDrag, { passive: false });
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag, { passive: false });
+            
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        }
+
+        function startDrag(e) {
+            isDragging = true;
+            currentCard = e.currentTarget;
+            startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+            currentCard.classList.add('dragging');
+        }
+
+        function drag(e) {
+            if (!isDragging || !currentCard) return;
+            e.preventDefault();
+            
+            const x = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+            currentX = x - startX;
+            
+            const rotation = currentX * 0.1;
+            currentCard.style.transform = `translateX(${currentX}px) rotate(${rotation}deg)`;
+            
+            const trashIndicator = currentCard.querySelector('.swipe-indicator.trash');
+            const keepIndicator = currentCard.querySelector('.swipe-indicator.keep');
+            
+            if (currentX < -50) {
+                currentCard.classList.add('swiping-left');
+                currentCard.classList.remove('swiping-right');
+                trashIndicator.style.opacity = Math.min(Math.abs(currentX) / 100, 1);
+                keepIndicator.style.opacity = 0;
+            } else if (currentX > 50) {
+                currentCard.classList.add('swiping-right');
+                currentCard.classList.remove('swiping-left');
+                keepIndicator.style.opacity = Math.min(currentX / 100, 1);
+                trashIndicator.style.opacity = 0;
+            } else {
+                currentCard.classList.remove('swiping-left', 'swiping-right');
+                trashIndicator.style.opacity = 0;
+                keepIndicator.style.opacity = 0;
+            }
+        }
+
+        function endDrag() {
+            if (!isDragging || !currentCard) return;
+            isDragging = false;
+            
+            currentCard.classList.remove('dragging');
+            
+            if (currentX < -100) {
+                animateSwipe('left');
+            } else if (currentX > 100) {
+                animateSwipe('right');
+            } else {
+                currentCard.style.transform = '';
+                currentCard.classList.remove('swiping-left', 'swiping-right');
+                const trashIndicator = currentCard.querySelector('.swipe-indicator.trash');
+                const keepIndicator = currentCard.querySelector('.swipe-indicator.keep');
+                trashIndicator.style.opacity = 0;
+                keepIndicator.style.opacity = 0;
+            }
+            
+            currentCard = null;
+            currentX = 0;
+        }
+
+        function animateSwipe(direction) {
+            const card = document.querySelector('.email-card[data-index="0"]');
+            if (!card) return;
+            
+            const flyX = direction === 'left' ? -500 : 500;
+            const rotation = direction === 'left' ? -30 : 30;
+            
+            card.style.transition = 'transform 0.3s ease-out';
+            card.style.transform = `translateX(${flyX}px) rotate(${rotation}deg)`;
+            
+            setTimeout(() => handleSwipe(direction), 250);
+        }
+
+        function handleSwipe(direction) {
+            if (emails.length === 0) return;
+            
+            if (direction === 'left') {
+                trashedCount++;
+                showToast('🗑️ Email trashed', 'trash');
+            } else {
+                keptCount++;
+                showToast('✓ Email kept', 'keep');
+            }
+            
+            emails = emails.slice(1);
+            updateStats();
+            renderCards();
+        }
+
+        function openReplyModal() {
+            if (emails.length === 0) return;
+            selectedEmail = emails[0];
+            
+            const replyToInfo = document.getElementById('reply-to-info');
+            replyToInfo.innerHTML = `
+                <div class="reply-to-avatar" style="background: ${selectedEmail.color}20; color: ${selectedEmail.color};">
+                    ${selectedEmail.sender.split(' ').map(n => n[0]).join('')}
+                </div>
+                <div class="reply-to-info">
+                    <div class="reply-to-name">${selectedEmail.sender}</div>
+                    <div class="reply-to-subject">Re: ${selectedEmail.subject}</div>
+                </div>
+            `;
+            
+            document.getElementById('reply-modal').classList.add('active');
+            document.getElementById('reply-text').value = '';
+        }
+
+        function closeReplyModal() {
+            document.getElementById('reply-modal').classList.remove('active');
+            selectedEmail = null;
+        }
+
+        function setQuickReply(text) {
+            document.getElementById('reply-text').value = text;
+        }
+
+        function sendReply() {
+            const text = document.getElementById('reply-text').value.trim();
+            if (!text) {
+                showToast('Please enter a reply message', 'reply');
+                return;
+            }
+            
+            showToast('📨 Reply sent!', 'reply');
+            closeReplyModal();
+            handleSwipe('right');
+        }
+
+        // Handle keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('reply-modal').classList.contains('active')) return;
+            
+            if (e.key === 'ArrowLeft') handleSwipe('left');
+            if (e.key === 'ArrowRight') handleSwipe('right');
+            if (e.key === 'r' || e.key === 'R') openReplyModal();
+        });
+
+        // Close modal on overlay click
+        document.getElementById('reply-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'reply-modal') closeReplyModal();
+        });
+
+        // Initialize
+        updateStats();
+        renderCards();
+    </script>
+</body>
+</html>
